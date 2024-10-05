@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import "./chatList.css";
 import AddUser from "./addUser/AddUser";
 import { useUserStore } from "../../lib/userStore";
@@ -12,28 +12,41 @@ function ChatList() {
   const [input, setInput] = useState("");
   const { currentUser } = useUserStore();
   const { chatId, changeChat } = useChatStore();
+  const modalRef = useRef(null);
+
   useEffect(() => {
     const unSub = onSnapshot(
       doc(db, "userchats", currentUser.id),
       async (res) => {
-        const items = res.data().chats;
+        if (res.exists()) {
+          const items = res.data().chats || [];
 
-        const promises = items.map(async (item) => {
-          const userDocRef = doc(db, "users", item.receiverId);
-          const userDocSnap = await getDoc(userDocRef);
+          const promises = items.map(async (item) => {
+            const userDocRef = doc(db, "users", item.receiverId);
+            const userDocSnap = await getDoc(userDocRef);
+            const user = userDocSnap.data();
+            return { ...item, user };
+          });
 
-          const user = userDocSnap.data();
-
-          return { ...item, user };
-        });
-
-        const chatData = await Promise.all(promises);
-
-        setChats(chatData.sort((a, b) => b.updatedAt - a.updatedAt));
+          const chatData = await Promise.all(promises);
+          setChats(chatData.sort((a, b) => b.updatedAt - a.updatedAt));
+        } else {
+          setChats([]);
+        }
       }
     );
+
+    const handleClickOutside = (event) => {
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
+        setAddModel(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
     return () => {
       unSub();
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [currentUser.id]);
 
@@ -45,15 +58,17 @@ function ChatList() {
     const chatIndex = userChats.findIndex(
       (item) => item.chatId === chat.chatId
     );
-    userChats[chatIndex].isSeen = true;
-    const userChatsRef = doc(db, "userchats", currentUser.id);
-    try {
-      await updateDoc(userChatsRef, {
-        chats: userChats,
-      });
-      changeChat(chat.chatId, chat.user);
-    } catch (err) {
-      console.log(err);
+    if (chatIndex !== -1) {
+      userChats[chatIndex].isSeen = true;
+      const userChatsRef = doc(db, "userchats", currentUser.id);
+      try {
+        await updateDoc(userChatsRef, {
+          chats: userChats,
+        });
+        changeChat(chat.chatId, chat.user);
+      } catch (err) {
+        console.log(err);
+      }
     }
   };
 
@@ -81,12 +96,9 @@ function ChatList() {
       </div>
       {filteredChats.map((chat) => (
         <div
-          className="item"
+          className={`item ${chat.chatId === chatId ? 'active' : ''}`}
           key={chat.chatId}
           onClick={() => handleSelect(chat)}
-          style={{
-            backgroundColor: chat?.isSeen ? "transparent" : "#5183fe",
-          }}
         >
           <img
             src={
@@ -106,7 +118,11 @@ function ChatList() {
           </div>
         </div>
       ))}
-      {addModel && <AddUser />}
+      {addModel && (
+        <div ref={modalRef}>
+          <AddUser onClose={() => setAddModel(false)} />
+        </div>
+      )}
     </div>
   );
 }

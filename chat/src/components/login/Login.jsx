@@ -76,6 +76,10 @@ const Login = () => {
     const { email, password } = Object.fromEntries(formData);
     try {
       await signInWithEmailAndPassword(auth, email, password);
+      toast.success("Login successful!");
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 1500);
     } catch (err) {
       console.log(err);
       toast.error(err.message);
