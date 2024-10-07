@@ -7,11 +7,29 @@ import {
   getDoc,
   onSnapshot,
   updateDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useChatStore } from "../../lib/chatStore";
 import { useUserStore } from "../../lib/userStore";
 import upload from "../../lib/upload";
+import { Trash2 } from "lucide-react";
+
+const ConfirmationModal = ({ onClose, onConfirm }) => (
+  <div className="modal">
+    <div className="modal-content">
+      <h3>Are you sure you want to delete all chats?</h3>
+      <div className="modal-buttons">
+        <button onClick={onConfirm} className="confirm-btn">
+          Yes
+        </button>
+        <button onClick={onClose} className="cancel-btn">
+          No
+        </button>
+      </div>
+    </div>
+  </div>
+);
 
 function Chat() {
   const [chat, setChat] = useState();
@@ -21,10 +39,12 @@ function Chat() {
     file: null,
     url: "",
   });
+  const [showModal, setShowModal] = useState(false); // State for the modal
   const { currentUser } = useUserStore();
-  const { chatId, user, isCurrentUserBlocked, isReceiverBlocked } =
+  const { chatId, user, isCurrentUserBlocked, isReceiverBlocked, changeChat } =
     useChatStore();
   const endRef = useRef(null);
+
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
@@ -38,10 +58,19 @@ function Chat() {
     };
   }, [chatId]);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setChat((prevChat) => ({ ...prevChat }));
+    }, 60000); // Update every 60 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
   const handleEmoji = (e) => {
     setText((prev) => prev + e.emoji);
     setOpen(false);
   };
+
   const handleImg = (e) => {
     if (e.target.files[0]) {
       setImg({
@@ -50,6 +79,7 @@ function Chat() {
       });
     }
   };
+
   const handleSend = async () => {
     if (text === "") return;
     let imgUrl = null;
@@ -65,6 +95,7 @@ function Chat() {
           ...(imgUrl && { img: imgUrl }),
         }),
       });
+
       const userIDs = [currentUser.id, user.id];
       userIDs.forEach(async (id) => {
         const userChatsRef = doc(db, "userchats", id);
@@ -84,6 +115,11 @@ function Chat() {
           });
         }
       });
+
+      // Scroll to bottom after sending the message
+      setTimeout(() => {
+        endRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 100); // slight delay to ensure the message is added before scroll
     } catch (err) {
       console.log(err);
     } finally {
@@ -94,20 +130,67 @@ function Chat() {
       setText("");
     }
   };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  const formatTime = (timestamp) => {
+    const time = new Date(timestamp?.seconds * 1000);
+    return time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  };
+
+  const handleDeleteChats = async () => {
+    try {
+      await deleteDoc(doc(db, "chats", chatId));
+      
+      const userIDs = [currentUser.id, user.id];
+      for (const userId of userIDs) {
+        const userChatsRef = doc(db, "userchats", userId);
+        const userChatsSnapshot = await getDoc(userChatsRef);
+        if (userChatsSnapshot.exists()) {
+          const userChatsData = userChatsSnapshot.data();
+          const updatedChats = userChatsData.chats.filter(chat => chat.chatId !== chatId);
+          await updateDoc(userChatsRef, { chats: updatedChats });
+        }
+      }
+
+      changeChat(null, null);
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setShowModal(false); 
+    }
+  };
+
   return (
     <div className="chat">
+      {showModal && (
+        <ConfirmationModal
+          onClose={() => setShowModal(false)}
+          onConfirm={handleDeleteChats}
+        />
+      )}
       <div className="top">
         <div className="user">
           <img src={user?.avatar || "./avatar.png"} alt="" />
           <div className="texts">
             <span>{user?.username}</span>
-            <p>Lorem ipsum dolor, sit </p>
           </div>
         </div>
         <div className="icons">
           <img src="./phone.png" alt="" />
           <img src="./video.png" alt="" />
           <img src="./info.png" alt="" />
+          <Trash2
+            onClick={() => setShowModal(true)}
+            className="delete-icon"
+            size={24}
+            color="#ffffff"
+          />
         </div>
       </div>
       <div className="center">
@@ -116,12 +199,16 @@ function Chat() {
             className={
               message.senderId === currentUser?.id ? "message own" : "message"
             }
-            key={message?.createAt}
+            key={message?.createdAt?.seconds}
           >
             <div className="texts">
-              {message.img && <img src={message.img} alt="" />}
-              <p>{message.text}</p>
-              {/* <span>1 min ago</span> */}
+              <div>
+                {message.img && <img src={message.img} alt="" />}
+                <p>{message.text}</p>
+              </div>
+              <div className="timestamp">
+                <span>{formatTime(message.createdAt)}</span>
+              </div>
             </div>
           </div>
         ))}
@@ -157,6 +244,7 @@ function Chat() {
           }
           value={text}
           onChange={(e) => setText(e.target.value)}
+          onKeyDown={handleKeyDown}
           disabled={isCurrentUserBlocked || isReceiverBlocked}
         />
         <div className="emoji">

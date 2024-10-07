@@ -1,66 +1,178 @@
-.chatList{
-    flex: 1;
-    overflow: scroll;
-    .search{
-        display: flex;
-        align-items: center;
-        gap: 20px;
-        padding: 20px;
-        .searchBar{
-            flex: 1;
-            background-color: rgba(17, 20, 45, 0.5);
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            border-radius: 10px;
-    
-            input{
-                background-color: transparent;
-                border: none;
-                outline: none;
-                color: white;
-                flex: 1;
-            }
-            img{
-                width: 20px;
-                height: 20px;
-            }
-        }
-        .add{
-            width: 36px;
-            height: 36px;
-            background-color: rgba(17, 25, 40, 0.5);
-            padding: 10px;
-            border-radius: 10px;
-            cursor: pointer;
-        }
-    }
-    .item{
-        display: flex;
-        align-items: center;
-        gap: 20px;
-        padding: 20px;
-        cursor: pointer;
-        border-bottom: 1px solid #dddddd35;
+.chatList {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  color: #ffffff;
+}
 
-        img{
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            object-fit: cover;
-        }
-        .texts{
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+.search {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
 
-            span{
-                font-weight: 500;
-            }
-            p{
-                font-size: 14px;
-                font-weight: 300;
-            }
-        }
-    }
+.searchBar {
+  flex: 1;
+  background-color: rgba(17, 20, 45, 0.5);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 2rem;
+  padding: 0.5rem 1rem;
+  transition: all 0.3s ease;
+}
+
+.searchBar:focus-within {
+  box-shadow: 0 0 0 2px #5183fe;
+}
+
+.searchBar input {
+  background-color: transparent;
+  border: none;
+  outline: none;
+  color: white;
+  flex: 1;
+  font-size: 1rem;
+}
+
+.searchBar img {
+  width: 1.25rem;
+  height: 1.25rem;
+  opacity: 0.7;
+}
+
+.add {
+  width: 2.5rem;
+  height: 2.5rem;
+  background-color: #0f3460;
+  padding: 0.5rem;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.add:hover {
+  background-color: #16213e;
+  transform: scale(1.1);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(221, 221, 221, 0.1);
+  transition: background-color 0.3s ease;
+}
+
+.item:hover {
+  background-color: #9a5f38;
+}
+
+.item img {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.texts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+  overflow: hidden;
+}
+
+.texts span {
+  font-weight: 500;
+  font-size: 1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.texts p {
+  font-size: 0.875rem;
+  font-weight: 300;
+  color: #a0a0a0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.user {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.user:hover {
+  background-color: rgba(81, 131, 254, 0.1);
+}
+
+.user.selected {
+  background-color: rgba(81, 131, 254, 0.2);
+}
+@media (max-width: 768px) {
+  .search {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .searchBar {
+    margin-bottom: 0.5rem;
+  }
+
+  .add {
+    align-self: flex-end;
+  }
+
+  .item {
+    padding: 0.75rem;
+  }
+
+  .item img {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .texts span {
+    font-size: 0.9rem;
+  }
+
+  .texts p {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .search {
+    padding: 0.75rem;
+  }
+
+  .item {
+    padding: 0.5rem;
+  }
+
+  .item img {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .texts span {
+    font-size: 0.8rem;
+  }
+
+  .texts p {
+    font-size: 0.7rem;
+  }
 }

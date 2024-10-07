@@ -27,21 +27,8 @@ function Detail() {
       <div className="user">
         <img src={user?.avatar || "./avatar.png"} alt="" />
         <h2>{user?.username}</h2>
-        <p>Lorem ipsum dolor sit amet</p>
       </div>
       <div className="info">
-        <div className="option">
-          <div className="title">
-            <span>Chat Settings</span>
-            <img src="./arrowUp.png" alt="" />
-          </div>
-        </div>
-        <div className="option">
-          <div className="title">
-            <span>Privacy & Help</span>
-            <img src="./arrowUp.png" alt="" />
-          </div>
-        </div>
         <div className="option">
           <div className="title">
             <span>Shared Photos</span>
@@ -55,12 +42,6 @@ function Detail() {
               </div>
               <img src="./download.png" className="icon" alt="" />
             </div>
-          </div>
-        </div>
-        <div className="option">
-          <div className="title">
-            <span>Shared Files</span>
-            <img src="./arrowUp.png" alt="" />
           </div>
         </div>
         <button onClick={handleBlock}>

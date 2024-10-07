@@ -1,10 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./addUser.css";
 import {
   arrayUnion,
   collection,
   doc,
-  getDoc,
   getDocs,
   query,
   serverTimestamp,
@@ -15,27 +14,43 @@ import {
 import { db } from "../../../lib/firebase";
 import { useUserStore } from "../../../lib/userStore";
 
-const AddUser = () => {
-  const [user, setUser] = useState(null);
+const AddUser = ({ onClose }) => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [users, setUsers] = useState([]);
   const { currentUser } = useUserStore();
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    const username = formData.get("username");
-    try {
-      const userRef = collection(db, "users");
-      const q = query(userRef, where("username", "==", username));
-      const querySnapshot = await getDocs(q);
-      if (!querySnapshot.empty) {
-        setUser(querySnapshot.docs[0].data());
+  useEffect(() => {
+    const searchUsers = async () => {
+      if (searchTerm.length === 0) {
+        setUsers([]);
+        return;
       }
-    } catch (err) {
-      console.log(err);
-    }
-  };
 
-  const handleAdd = async () => {
+      try {
+        const userRef = collection(db, "users");
+        const q = query(
+          userRef,
+          where("username", ">=", searchTerm),
+          where("username", "<=", searchTerm + "\uf8ff")
+        );
+        const querySnapshot = await getDocs(q);
+        const userList = querySnapshot.docs
+          .map(doc => doc.data())
+          .filter(user => user.id !== currentUser.id);
+        setUsers(userList);
+      } catch (err) {
+        console.log(err);
+      }
+    };
+
+    const debounceTimer = setTimeout(() => {
+      searchUsers();
+    }, 300);
+
+    return () => clearTimeout(debounceTimer);
+  }, [searchTerm, currentUser.id]);
+
+  const handleAdd = async (user) => {
     const chatRef = collection(db, "chats");
     const userChatsRef = collection(db, "userchats");
     try {
@@ -60,7 +75,7 @@ const AddUser = () => {
           updatedAt: Date.now(),
         }),
       });
-
+      onClose(); // Close the modal after adding the user
     } catch (err) {
       console.log(err);
     }
@@ -68,19 +83,23 @@ const AddUser = () => {
 
   return (
     <div className="addUser">
-      <form onSubmit={handleSearch}>
-        <input type="text" name="username" placeholder="Username" />
-        <button>Search</button>
-      </form>
-      {user && (
-        <div className="user">
-          <div className="detail">
-            <img src={user.avatar} alt="" />
-            <span>{user.username}</span>
+      <input
+        type="text"
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        placeholder="Search username"
+      />
+      <div className="userList">
+        {users.map((user) => (
+          <div key={user.id} className="user">
+            <div className="detail">
+              <img src={user.avatar} alt="" />
+              <span>{user.username}</span>
+            </div>
+            <button onClick={() => handleAdd(user)}>Add User</button>
           </div>
-          <button onClick={handleAdd}>Add User</button>
-        </div>
-      )}
+        ))}
+      </div>
     </div>
   );
 };
